@@ -13,10 +13,10 @@ import React, {Component} from 'react';
 import {Platform, StyleSheet,SafeAreaView, Text, TextInput, Button, TouchableHighlight, Alert,TouchableOpacity, View} from 'react-native';
 import {createStackNavigator, createAppContainer, createBottomTabNavigator} from 'react-navigation';
 import Pie from 'react-native-pie'
+import { createDidYouMeanMessage } from 'jest-validate/build/utils';
 // import {Col, Row, Grid} from 'react-native-easy-grid';
 
 global.caloreToday = 0
-
 
 // 100g
 var foodData = {
@@ -37,6 +37,7 @@ class WelcomeScreen extends Component {
         weight: 0,
         height: 0,
         age: 0,
+        target: 0
         };
     }
     render() {
@@ -56,13 +57,13 @@ class WelcomeScreen extends Component {
                 
                 <TextInput
                 style={styles.userInput}
-                placeholder="Enter Weight"
+                placeholder="Enter Weight (kg)"
                 onChangeText={(weight) => this.setState({weight})}
                 />
                 
                 <TextInput
                 style={styles.userInput}
-                placeholder="Enter Height"
+                placeholder="Enter Height (cm)"
                 onChangeText={(height) => this.setState({height})}
                 />
                 
@@ -71,10 +72,16 @@ class WelcomeScreen extends Component {
                 placeholder="Enter Age"
                 onChangeText={(age) => this.setState({age})}
                 />
+
+                <TextInput
+                style={styles.userInput}
+                placeholder="Enter your target weight"
+                onChangeText={(target) => this.setState({target})}
+                />
                 
                 <TouchableHighlight onPress={() => {
                 this.props.navigation.navigate('Recomendation', {height: this.state.height, weight: this.state.weight, age: this.state.age});
-                this.props.navigation.navigate('Home', {sex: this.state.sex, height: this.state.height, weight: this.state.weight, age: this.state.age});
+                this.props.navigation.navigate('Home', {sex: this.state.sex, height: this.state.height, weight: this.state.weight, age: this.state.age, target: this.state.target});
                 }} underlayColor="white">
                 <View style={styles.button}>
                 <Text style={styles.buttonText}>Next ></Text>
@@ -96,11 +103,46 @@ class BuildPersonalModel extends Component {
     submitFoodSelection = (lastMeal, calorie) => {
         global.caloreToday = parseInt(global.caloreToday) + parseInt(calorie)
         this.props.navigation.navigate('Home', {lastMeal: lastMeal, calorie: calorie});
-        this.props.navigation.navigate('Recomendation', {calorie: calorie});
-        // alert('Last Meal is: ' + lastMeal + " and " + calorie + " kCal")
+        this.props.navigation.navigate('Recommendation', {calorie: calorie});
+        // alert('Last Meal is: ' + lastMeal + " and " + calorie + " Cal")
     }
     
     render() {
+        let that = this;
+        setTimeout(() =>{
+            Alert.alert(
+                "It's time to eat!",
+                '12pm, want to grab some food?',
+                [
+                  {text: 'Ask me later', onPress: () => console.log('Ask me later pressed')},
+                  {
+                    text: 'Cancel',
+                    onPress: () => console.log('Cancel Pressed'),
+                    style: 'cancel',
+                  },
+                  {text: 'OK', onPress: () => console.log('OK Pressed')},
+                ],
+                {cancelable: false},
+              );
+            }, 30000
+        );
+        setTimeout(() =>{
+            Alert.alert(
+                "It is time to exercise",
+                'You have ate too much! Go to recommendation to see what you need to do!',
+                [
+                  {text: 'Ask me later', onPress: () => console.log('Ask me later pressed')},
+                  {
+                    text: 'Cancel',
+                    onPress: () => console.log('Cancel Pressed'),
+                    style: 'cancel',
+                  },
+                  {text: 'OK', onPress: () => console.log('OK Pressed')},
+                ],
+                {cancelable: false},
+              );
+            }, 90000
+        );
         return (
                 <SafeAreaView>
                 <View style = {styles.dietContainer}>
@@ -140,14 +182,19 @@ class BuildPersonalModel extends Component {
 // age in years
 // USes revisted Harris-Benedict equations
 function getCalorineIntake(weight, height, age, sex){
+    var baseCalorie = 2500;
+    if (age > 18 && age <= 30)
+        baseCalorie = 2500;
+    else if (age > 30 && age <= 50)
+        baseCalorie = 2200;
     if (sex === 'Male' || sex === 'male'){
-        var caloriesSugesstion = (13.397 * weight) + (4.799 * height) - (5.677 * age) + 88.362 // if male
+        var caloriesSugesstion = (13.397 * weight) + (4.799 * height) - (5.677 * age) + baseCalorie; // if male
     }
     else if (sex == 'Female' || sex == 'female'){
-        var caloriesSugesstion = 9.247 * weight + 3.098 * height - 4.33 * age + 447.593
+        var caloriesSugesstion = 9.247 * weight + 3.098 * height - 4.33 * age + baseCalorie / 1.3;
     }
     else {
-        var caloriesSugesstion = (13.397 * weight) + (4.799 * height) - (5.677 * age) + 88.362
+        var caloriesSugesstion = (13.397 * weight) + (4.799 * height) - (5.677 * age) + baseCalorie;
     }
     return parseInt(caloriesSugesstion)
 }
@@ -175,18 +222,19 @@ class recommendations extends React.Component {
                     <CalorieRec style = {styles.dietContainer} calorieAmmount = {JSON.stringify(calorireIntake - parseInt(global.caloreToday)) } />
                     <Suggesstions/>
                     <Text style = {{textAlign: 'center', padding: 10, fontWeight: 'bold', fontSize: 22, paddingTop: 90}}> Exercise Recommendation</Text>
-                    <Text style = {{textAlign : 'center'} }> Reccomended exercise for the day: 30 minutes </Text>
+                    <Text style = {{textAlign : 'center'} }> Recomended exercise for the day: {(calorie * 0.11 /100).toFixed(2)} miles </Text>
                 </View>
                 );
     }
 }
+
 // Enter calorie recommendation as calorieAmmount = "Calulated calorie ammount"
 class CalorieRec extends React.Component {
     render() {
         return (
                 <View style = {{alignItems: 'center', justifyContent: 'center', paddingTop: 10}}>
-                <Text style = {styles.questions}>Calorie Recommendation is: {this.props.calorieAmmount} kCal </Text>
-                <Text style = {{textAlign: 'center', padding: 10}}> *This ammount is for the rest of the day </Text>
+                <Text style = {styles.questions}>Calorie Recommendation is: {this.props.calorieAmmount} Cal </Text>
+                <Text style = {{textAlign: 'center', padding: 10}}> *This amount is for the rest of the day </Text>
                 </View>
                 );
     }
@@ -198,12 +246,12 @@ class Suggesstions extends React.Component {
         return (
                 <View>
                 <Text style = {{textAlign: 'center', padding: 10, fontWeight: 'bold', fontSize: 22, paddingTop: 90}}> Food Recommendation</Text>
-                <Text style = {{textAlign: 'center', padding: 5}}>Steak {foodData['Steak']}kCal  per 100g </Text>
-                <Text style = {{textAlign: 'center', padding: 5}}>Chicken Breast {foodData['Chicken Breast']}kCal  per 100g </Text>
-                <Text style = {{textAlign: 'center', padding: 5}}>Pasta (No Sauce) {foodData['Pasta No Sauce']}kCal  per 100g </Text>
-                <Text style = {{textAlign: 'center', padding: 5}}>Rice {foodData['Rice']}kCal  per 100g </Text>
-                <Text style = {{textAlign: 'center', padding: 5}}>Apple {foodData['Apple']}kCal  per 100g </Text>
-                <Text style = {{textAlign: 'center', padding: 5}}>Orange {foodData['Orange']}kCal  per 100g </Text>
+                <Text style = {{textAlign: 'center', padding: 5}}>Steak {foodData['Steak']} Cal  per 100g </Text>
+                <Text style = {{textAlign: 'center', padding: 5}}>Chicken Breast {foodData['Chicken Breast']} Cal  per 100g </Text>
+                <Text style = {{textAlign: 'center', padding: 5}}>Pasta (No Sauce) {foodData['Pasta No Sauce']} Cal  per 100g </Text>
+                <Text style = {{textAlign: 'center', padding: 5}}>Rice {foodData['Rice']} Cal  per 100g </Text>
+                <Text style = {{textAlign: 'center', padding: 5}}>Apple {foodData['Apple']} Cal  per 100g </Text>
+                <Text style = {{textAlign: 'center', padding: 5}}>Orange {foodData['Orange']} Cal  per 100g </Text>
                 </View>
                 );
     }
@@ -222,6 +270,7 @@ class HomeScreen extends React.Component {
         const height = navigation.getParam('height', '-1');
         const weight = navigation.getParam('weight', '-1');
         const age = navigation.getParam('age', '-1');
+        const target = navigation.getParam('target', '0');
         const lastMeal = navigation.getParam('lastMeal', 'None');
         const calorie = navigation.getParam('calorie', '0');
         
@@ -229,17 +278,15 @@ class HomeScreen extends React.Component {
         
         
         return (
-                <View>
-                <Text style={{top: 50, fontSize:25, fontWeight:'bold', textAlign:'center', padding: 50}}>Home</Text>
-                <Text style={{top: 100, fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>sex: {JSON.stringify(sex).slice(1, -1)}</Text>
-                <Text style={{top: 100, fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>weight: {JSON.stringify(weight).slice(1, -1)}</Text>
-                <Text style={{top: 100, fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>height: {JSON.stringify(height).slice(1, -1)}</Text>
-                <Text style={{top: 100, fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>age: {JSON.stringify(age).slice(1, -1)}</Text>
-                <Text style={{top: 100, fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>meal: {JSON.stringify(lastMeal).slice(1, -1)}</Text>
-                <Text style={{top: 100, fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>calorie: {JSON.stringify(calorie).slice(1, -1)}</Text>
-                <Text style={{top: 100, fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}> Calorie percent left for today : {percentCaloriesLeftToUse}% </Text>
-                <Text style={{top: 100, fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}> Exercise percent left for today : 100% </Text>
-                
+                <View style={styles.container}>
+                <Text style={{fontSize:25, fontWeight:'bold', textAlign:'center', padding: 50}}>Home</Text>
+                <Text style={{fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>Sex: {JSON.stringify(sex).slice(1, -1)}</Text>
+                <Text style={{fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>Weight: {JSON.stringify(weight).slice(1, -1)} kg</Text>
+                <Text style={{fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>Height: {JSON.stringify(height).slice(1, -1)} cm</Text>
+                <Text style={{fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>Age: {JSON.stringify(age).slice(1, -1)}</Text>
+                <Text style={{fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>Goal: {JSON.stringify(target).slice(1, -1)} kg</Text>
+                <Text style={{fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>Meal: {JSON.stringify(lastMeal).slice(1, -1)}</Text>
+                <Text style={{fontSize:15, fontWeight:'bold', textAlign:'center', padding: 20}}>Calorie: {JSON.stringify(calorie).slice(1, -1)} Cal</Text> 
                 </View>
                 );
     }
@@ -300,31 +347,16 @@ class Summary extends Component {
 }
 
 
-
-// const WelcomeStack = createStackNavigator({
-//   Welcome: WelcomeScreen,
-//   Home: HomeScreen,
-// });
-
-// const HomeStack = createStackNavigator({
-//   Home: HomeScreen,
-// });
-
-// const PersonalHealthStack = createStackNavigator({
-//   Personal: BuildPersonalModel,
-// });
-
-
 const cbt = createBottomTabNavigator(
                                      {
                                      Welcome: WelcomeScreen,
                                      Home: HomeScreen,
                                      Diet: BuildPersonalModel,
-                                     Recomendation: recommendations,
+                                     Recommendation: recommendations,
                                      Summary: Summary,
                                      },
                                      {
-                                     initialRouteName: "Home"
+                                     initialRouteName: "Welcome"
                                      },
                                      )
 
